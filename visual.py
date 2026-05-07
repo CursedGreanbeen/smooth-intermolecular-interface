@@ -1,5 +1,6 @@
 import plotly.express as px
 import plotly.graph_objects as go
+import numpy as np
 from mesh import find_neighbor_indexes
 
 
@@ -58,7 +59,7 @@ def visualizer(lig_xyz, prot_xyz, lig_vdw, prot_vdw, smooth_mesh):
     )
 
     # Получаем максимальное значение ЕС
-    EC = smooth_mesh.vertex_attributes['EC']
+    EC = np.abs(smooth_mesh.vertex_attributes['EC'])
     M = max(abs(EC)) if len(EC) > 0 else 1.0
 
     interface = go.Mesh3d(
@@ -73,8 +74,8 @@ def visualizer(lig_xyz, prot_xyz, lig_vdw, prot_vdw, smooth_mesh):
 
         # Раскраска по локальным значениям ЕС
         intensity=EC,
-        colorscale=[[0, 'red'], [0.5, 'green'], [1, 'red']],
-        cmin=-M,
+        colorscale=[[0, 'green'], [0.5, 'white'], [1, 'red']],
+        cmin=0,
         cmax=M,
         showscale=True,
         name="Interface EC",
