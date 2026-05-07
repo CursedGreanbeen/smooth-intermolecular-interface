@@ -1,20 +1,8 @@
 import numpy as np
-import os
-from scipy.stats import pearsonr
 from scipy.spatial import cKDTree
-
-from copy import deepcopy
-from pathlib import Path
 
 from skimage import measure
 import trimesh
-from trimesh.smoothing import laplacian_calculation
-
-import gemmi
-import pandas as pd
-
-import plotly.express as px
-import plotly.graph_objects as go
 
 
 PROTEIN_CUTOFF = 15.0

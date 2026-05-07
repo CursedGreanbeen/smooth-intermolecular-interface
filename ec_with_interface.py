@@ -4,20 +4,8 @@ from scipy.stats import pearsonr
 from scipy.spatial import cKDTree
 from scipy.sparse import coo_matrix
 
-from copy import deepcopy
-from pathlib import Path
-
-from skimage import measure
-import trimesh
-from trimesh.smoothing import laplacian_calculation
-
-import gemmi
-import pandas as pd
-
-import plotly.express as px
-import plotly.graph_objects as go
-
-from mesh import find_neighbor_indexes, make_interface_grid, calculate_smooth_sdf, SurfaceMesh
+from mesh import calculate_smooth_sdf, SurfaceMesh
+from visual import visualizer
 
 
 PROTEIN_CUTOFF = 15.0
@@ -87,7 +75,7 @@ def main(lig_pqr, prot_pqr):
         smooth_factor=SDF_SMOOTH_FACTOR
     )
 
-    # Получение изоповерхности
+    # 3. Получение изоповерхности
     print(f"   - Creating smooth isosurface...")
     mesh = SurfaceMesh.from_sdf(s_sdf, grd_xx, grd_yy, grd_zz)
 
@@ -97,14 +85,19 @@ def main(lig_pqr, prot_pqr):
     v_lig = calc_esp(l_coords, l_charges, surf_points)
     v_prot = calc_esp(p_coords, p_charges, surf_points)
 
-    # 5. Корреляция
+    # 5. Корреляция по Пирсону
     print(f"   - Calculating Pearson correlation...")
     corr, _ = pearsonr(v_lig, v_prot)
     print(corr)
 
+    # 6. Локальные ЕС
     print(f"   - Calculating local EC values...")
     EC = v_lig + v_prot
+    mesh.vertex_attributes['EC'] = EC
     print(EC)
+
+    # 7. Визуал
+    visualizer(l_coords, p_coords, l_radii, p_radii, mesh)
 
     return v_lig, v_prot, corr, EC
 
