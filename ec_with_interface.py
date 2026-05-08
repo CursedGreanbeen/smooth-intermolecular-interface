@@ -1,11 +1,12 @@
 import numpy as np
 import os
+from pathlib import Path
 from scipy.stats import pearsonr
 from scipy.spatial import cKDTree
 from scipy.sparse import coo_matrix
 
 from mesh import calculate_smooth_sdf, SurfaceMesh
-from visual import visualizer
+from visual import export_to_pymol, visualizer
 
 
 PROTEIN_CUTOFF = 15.0
@@ -96,11 +97,16 @@ def main(lig_pqr, prot_pqr):
     mesh.vertex_attributes['EC'] = EC
     print(EC)
 
-    # 7. Визуал
+    # 7. Сохранение
+    export_to_pymol(s_sdf, grd_xx, grd_yy, grd_zz, Path("data") / "5c7a_lig1.dx")
+
+    # 8. Визуал
     visualizer(l_coords, p_coords, l_radii, p_radii, mesh)
 
     return v_lig, v_prot, corr, EC
 
 
 if __name__ == "__main__":
-    main('lig1_charged.pqr', '5c7a_charged.pqr')
+    ligand_pqr = Path("example/lig1_charged.pqr")
+    protein_pqr = Path("example/5c7a_charged.pqr")
+    main(ligand_pqr, protein_pqr)

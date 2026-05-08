@@ -1,6 +1,7 @@
 import plotly.express as px
 import plotly.graph_objects as go
 import numpy as np
+from pathlib import Path
 from mesh import find_neighbor_indexes
 
 
@@ -117,8 +118,67 @@ def visualizer(lig_xyz, prot_xyz, lig_vdw, prot_vdw, smooth_mesh):
             yaxis=dict(range=[lig_xyz.T[1].min() - 10, lig_xyz.T[1].max() + 10]),
             zaxis=dict(range=[lig_xyz.T[2].min() - 10, lig_xyz.T[2].max() + 10]),
             aspectmode='data'  # Кубические пропорции — иногда помогает
-        )
-
+        ),
+        legend=dict(
+            x=0.02,  # place legend near left edge
+            y=0.98,  # near top edge
+            xanchor='left',
+            yanchor='top',
+            bgcolor='rgba(255,255,255,0.7)'  # semi-transparent background for readability
+        ),
+        margin=dict(r=120)  # extra space on right for the colorbar
     )
 
     fig.show()
+
+
+def export_to_pymol(
+        sdf: np.ndarray,
+        grd_xx: np.ndarray,
+        grd_yy: np.ndarray,
+        grd_zz: np.ndarray,
+        file: Path,
+):
+    """
+    Export scalar grid to PyMOL-compatible OpenDX format.
+
+    Parameters
+    ----------
+    grid : np.ndarray of shape (nx, ny, nz)
+        Your scalar density field
+    origin : tuple (x, y, z)
+        Physical coordinates of grid point (0, 0, 0)
+    spacing : tuple (dx, dy, dz)
+        Grid spacing in Angstroms (or any unit PyMOL uses)
+    """
+    # Вычисление начала координат сетки и spacing
+    origin = (
+        grd_xx[0, 0, 0],
+        grd_yy[0, 0, 0],
+        grd_zz[0, 0, 0],
+    )
+    spacing = (
+        grd_xx[1, 0, 0] - grd_xx[0, 0, 0],
+        grd_yy[0, 1, 0] - grd_yy[0, 0, 0],
+        grd_zz[0, 0, 1] - grd_zz[0, 0, 0],
+    )
+    nx, ny, nz = sdf.shape
+
+    file.parent.mkdir(exist_ok=True, parents=True)
+
+    with file.open("w") as f:
+        # Header defining the grid geometry
+        f.write(f'object 1 class gridpositions counts {nx} {ny} {nz}\n')
+        f.write(f'origin {origin[0]} {origin[1]} {origin[2]}\n')
+        f.write(f'delta {spacing[0]} 0 0\n')
+        f.write(f'delta 0 {spacing[1]} 0\n')
+        f.write(f'delta 0 0 {spacing[2]}\n')
+        f.write(f'object 2 class gridconnections counts {nx} {ny} {nz}\n')
+        f.write(f'object 3 class array type float rank 0 items {nx * ny * nz} data follows\n')
+
+        # Write data (Fortran order: x varies fastest)
+        # This matches OpenDX expectation: grid[i,j,k] with i (x-index) changing fastest
+        for val in sdf.ravel(order='C'):
+            f.write(f'{val:.6e}\n')
+
+        f.write(f'object "density" class field\n')
